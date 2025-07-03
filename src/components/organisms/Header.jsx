@@ -1,9 +1,33 @@
-import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Navigation from '@/components/organisms/Navigation';
+import React, { useContext, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
+import { AuthContext } from "@/App";
+import ApperIcon from "@/components/ApperIcon";
+import Navigation from "@/components/organisms/Navigation";
+import Button from "@/components/atoms/Button";
+
+const LogoutButton = () => {
+  const { logout } = useContext(AuthContext);
+  
+  const handleLogout = async () => {
+    if (window.confirm('Are you sure you want to logout?')) {
+      await logout();
+    }
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleLogout}
+      className="text-gray-600 hover:text-gray-900"
+    >
+      <ApperIcon name="LogOut" size={16} className="mr-2 hidden sm:inline" />
+      <span className="hidden sm:inline">Logout</span>
+      <ApperIcon name="LogOut" size={16} className="sm:hidden" />
+    </Button>
+  );
+};
 
 const Header = ({ onCreateTask }) => {
   const location = useLocation();
@@ -55,7 +79,7 @@ const Header = ({ onCreateTask }) => {
               <Navigation />
             </div>
 
-            {/* Actions */}
+{/* Actions */}
             <div className="flex items-center space-x-3">
               <Button
                 variant="primary"
@@ -74,6 +98,7 @@ const Header = ({ onCreateTask }) => {
               >
                 <ApperIcon name="Plus" size={16} />
               </Button>
+              <LogoutButton />
             </div>
           </div>
         </div>
