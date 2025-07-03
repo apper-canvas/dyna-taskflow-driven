@@ -156,7 +156,7 @@ records: [{
           created_at: new Date().toISOString(),
           is_recurring: taskData.isRecurring ? "true" : "false",
           recurring_id: taskData.recurringId || null,
-          recurrence_pattern: taskData.recurrencePattern || ''
+          recurrence_pattern: String(taskData.recurrencePattern || '')
         }]
       };
       const response = await this.apperClient.createRecord('task', params);
@@ -219,7 +219,7 @@ records: [{
       if (!this.apperClient) this.initializeClient();
       
       // Filter fields based on visibility - only include Updateable fields
-      const updateData = {
+const updateData = {
         Id: parseInt(id)
       };
 
@@ -236,7 +236,7 @@ if (updates.projectId !== undefined) updateData.project_id = parseInt(updates.pr
       }
 if (updates.isRecurring !== undefined) updateData.is_recurring = updates.isRecurring ? "true" : "false";
       if (updates.recurringId !== undefined) updateData.recurring_id = updates.recurringId;
-      if (updates.recurrencePattern !== undefined) updateData.recurrence_pattern = updates.recurrencePattern || '';
+      if (updates.recurrencePattern !== undefined) updateData.recurrence_pattern = String(updates.recurrencePattern || '');
       const params = {
         records: [updateData]
       };
