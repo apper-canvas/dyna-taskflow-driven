@@ -10,12 +10,18 @@ import { projectService } from "@/services/api/projectService";
 
 const TaskModal = ({ isOpen, onClose, task = null, mode = 'view' }) => {
   const [currentMode, setCurrentMode] = useState(mode);
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     title: '',
     description: '',
     priority: 'medium',
     deadline: '',
-    projectId: ''
+    projectId: '',
+    isRecurring: false,
+    recurrencePattern: {
+      type: 'days',
+      interval: 1
+    },
+    recurrenceEndDate: ''
   });
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -32,14 +38,20 @@ useEffect(() => {
           deadline: task.deadline ? format(new Date(task.deadline), 'yyyy-MM-dd') : '',
           projectId: task.projectId || ''
         });
-      } else {
+} else {
         setCurrentMode('create');
         setFormData({
           title: '',
           description: '',
           priority: 'medium',
           deadline: '',
-          projectId: ''
+          projectId: '',
+          isRecurring: false,
+          recurrencePattern: {
+            type: 'days',
+            interval: 1
+          },
+          recurrenceEndDate: ''
         });
       }
       setErrors({});
@@ -122,7 +134,7 @@ useEffect(() => {
 
   const projectOptions = projects.map(project => ({
     value: project.Id,
-    label: project.name
+label: project.name
   }));
 
   const priorityOptions = [
@@ -131,6 +143,42 @@ useEffect(() => {
     { value: 'high', label: 'High' }
   ];
 
+  const recurrenceOptions = [
+    { value: 'days', label: 'Days' },
+    { value: 'weeks', label: 'Weeks' },
+    { value: 'months', label: 'Months' },
+    { value: 'years', label: 'Years' }
+  ];
+
+  const handleRecurrenceChange = (field, value) => {
+    if (field === 'isRecurring') {
+      setFormData(prev => ({
+        ...prev,
+        isRecurring: value
+      }));
+    } else if (field === 'recurrenceType') {
+      setFormData(prev => ({
+        ...prev,
+        recurrencePattern: {
+          ...prev.recurrencePattern,
+          type: value
+        }
+      }));
+    } else if (field === 'recurrenceInterval') {
+      setFormData(prev => ({
+        ...prev,
+        recurrencePattern: {
+          ...prev.recurrencePattern,
+          interval: parseInt(value) || 1
+        }
+      }));
+    } else if (field === 'recurrenceEndDate') {
+      setFormData(prev => ({
+        ...prev,
+        recurrenceEndDate: value
+      }));
+    }
+  };
   return (
     <AnimatePresence>
     {isOpen && <motion.div
@@ -257,10 +305,70 @@ useEffect(() => {
                             type="date"
                             value={formData.deadline}
                             onChange={handleInputChange}
-                            required
+required
                             error={errors.deadline} />
                     </div>
-                    <FormField
+                    
+                    {/* Recurring Task Section */}
+                    <div className="border-t border-gray-200 pt-4">
+                        <div className="flex items-center mb-4">
+                            <input
+                                type="checkbox"
+                                id="isRecurring"
+                                checked={formData.isRecurring}
+                                onChange={(e) => handleRecurrenceChange('isRecurring', e.target.checked)}
+                                className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                            />
+                            <label htmlFor="isRecurring" className="ml-2 text-sm font-medium text-gray-700">
+                                Make this a recurring task
+                            </label>
+                        </div>
+                        
+                        {formData.isRecurring && (
+                            <div className="space-y-4 pl-6 border-l-2 border-primary/20">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                        label="Repeat Every"
+                                        name="recurrenceType"
+                                        type="select"
+                                        value={formData.recurrencePattern.type}
+                                        onChange={(e) => handleRecurrenceChange('recurrenceType', e.target.value)}
+                                        options={recurrenceOptions}
+                                        required />
+                                    <FormField
+                                        label="Interval"
+                                        name="recurrenceInterval"
+                                        type="number"
+                                        value={formData.recurrencePattern.interval}
+                                        onChange={(e) => handleRecurrenceChange('recurrenceInterval', e.target.value)}
+                                        min="1"
+                                        max="365"
+                                        placeholder="1"
+                                        required
+                                        error={errors.recurrenceInterval} />
+                                </div>
+                                <FormField
+                                    label="End Date"
+                                    name="recurrenceEndDate"
+                                    type="date"
+                                    value={formData.recurrenceEndDate}
+                                    onChange={(e) => handleRecurrenceChange('recurrenceEndDate', e.target.value)}
+                                    required
+                                    error={errors.recurrenceEndDate} />
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <div className="flex items-start">
+                                        <ApperIcon name="Info" size={16} className="text-blue-600 mr-2 mt-0.5" />
+                                        <div className="text-sm text-blue-700">
+                                            <p className="font-medium">Recurring Task Preview</p>
+                                            <p>This will create multiple tasks repeating every {formData.recurrencePattern.interval} {formData.recurrencePattern.type.slice(0, -2)}{formData.recurrencePattern.interval > 1 ? 's' : ''}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+<FormField
                         label="Project"
                         name="projectId"
                         type="select"

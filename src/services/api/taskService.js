@@ -129,8 +129,109 @@ return true;
         updatedTasks.push({ ...this.tasks[index] });
       }
     }
+return updatedTasks;
+  }
+
+  async createRecurringTasks(taskData) {
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    return updatedTasks;
+    if (!taskData.isRecurring || !taskData.recurrencePattern) {
+      throw new Error('Invalid recurring task data');
+    }
+
+    const { generateRecurringTasks, validateRecurringPattern } = await import('@/utils/taskUtils');
+    
+    // Validate recurrence pattern
+    const validation = validateRecurringPattern(taskData.recurrencePattern);
+    if (!validation.valid) {
+      throw new Error(validation.message);
+    }
+
+    // Generate recurring ID
+    const recurringId = Date.now();
+    
+    // Create template task without recurring fields
+    const templateTask = {
+      title: taskData.title,
+      description: taskData.description || '',
+      priority: taskData.priority || 'medium',
+      projectId: parseInt(taskData.projectId),
+      completed: false,
+      isRecurring: true,
+      recurringId: recurringId,
+      recurrencePattern: taskData.recurrencePattern
+    };
+
+    // Generate recurring tasks
+    const startDate = new Date(taskData.deadline);
+    const endDate = taskData.recurrenceEndDate ? new Date(taskData.recurrenceEndDate) : null;
+    
+    const recurringTasks = generateRecurringTasks(
+      templateTask,
+      taskData.recurrencePattern,
+      startDate,
+      endDate
+    );
+
+    // Add IDs and save all tasks
+    const savedTasks = [];
+    for (const task of recurringTasks) {
+      const newTask = {
+        ...task,
+        Id: Math.max(...this.tasks.map(t => t.Id), 0) + 1
+      };
+      this.tasks.push(newTask);
+      savedTasks.push({ ...newTask });
+    }
+
+    return savedTasks;
+  }
+
+  async getRecurringTemplates() {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    const recurringTasks = this.tasks.filter(task => task.isRecurring);
+    const templates = {};
+    
+    recurringTasks.forEach(task => {
+      if (!templates[task.recurringId]) {
+        templates[task.recurringId] = {
+          id: task.recurringId,
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          projectId: task.projectId,
+          recurrencePattern: task.recurrencePattern,
+          totalTasks: 0,
+          completedTasks: 0,
+          nextDueDate: null
+        };
+      }
+      
+      templates[task.recurringId].totalTasks++;
+      if (task.completed) {
+        templates[task.recurringId].completedTasks++;
+      }
+      
+      // Find next due date
+      if (!task.completed && task.deadline) {
+        const dueDate = new Date(task.deadline);
+        if (!templates[task.recurringId].nextDueDate || dueDate < templates[task.recurringId].nextDueDate) {
+          templates[task.recurringId].nextDueDate = dueDate;
+        }
+      }
+    });
+    
+    return Object.values(templates);
+  }
+
+  async deleteRecurringTemplate(recurringId) {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const deletedTasks = this.tasks.filter(task => task.recurringId === parseInt(recurringId));
+    this.tasks = this.tasks.filter(task => task.recurringId !== parseInt(recurringId));
+    
+    return { deletedCount: deletedTasks.length };
   }
 }
 

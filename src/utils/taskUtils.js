@@ -174,7 +174,112 @@ export const getCalendarData = (tasks, year, month) => {
       currentDate.setDate(currentDate.getDate() + 1);
     }
     calendar.push(weekDays);
-  }
+}
   
   return calendar;
+};
+
+// Recurring Task Utilities
+export const generateRecurringTasks = (templateTask, pattern, startDate, endDate) => {
+  const tasks = [];
+  const dates = calculateRecurrenceDates(pattern, startDate, endDate);
+  
+  dates.forEach(date => {
+    tasks.push({
+      ...templateTask,
+      deadline: date.toISOString(),
+      createdAt: new Date().toISOString(),
+      completed: false,
+      completedAt: null,
+      isRecurring: true,
+      recurringId: templateTask.recurringId || Date.now()
+    });
+  });
+  
+  return tasks;
+};
+
+export const getNextOccurrence = (lastDate, pattern) => {
+  const date = new Date(lastDate);
+  
+  switch (pattern.type) {
+    case 'daily':
+      date.setDate(date.getDate() + (pattern.interval || 1));
+      break;
+    case 'weekly':
+      date.setDate(date.getDate() + (7 * (pattern.interval || 1)));
+      break;
+    case 'monthly':
+      date.setMonth(date.getMonth() + (pattern.interval || 1));
+      break;
+    default:
+      return null;
+  }
+  
+  return date;
+};
+
+export const validateRecurringPattern = (pattern) => {
+  if (!pattern || !pattern.type) {
+    return { valid: false, message: 'Recurrence pattern is required' };
+  }
+  
+  const validTypes = ['daily', 'weekly', 'monthly'];
+  if (!validTypes.includes(pattern.type)) {
+    return { valid: false, message: 'Invalid recurrence type' };
+  }
+  
+  if (pattern.interval && (pattern.interval < 1 || pattern.interval > 365)) {
+    return { valid: false, message: 'Interval must be between 1 and 365' };
+  }
+  
+  return { valid: true };
+};
+
+export const calculateRecurrenceDates = (pattern, startDate, endDate) => {
+  const dates = [];
+  const start = new Date(startDate);
+  const end = endDate ? new Date(endDate) : new Date(start.getTime() + (365 * 24 * 60 * 60 * 1000)); // Default 1 year
+  
+  let currentDate = new Date(start);
+  
+  while (currentDate <= end && dates.length < 100) { // Safety limit
+    dates.push(new Date(currentDate));
+    currentDate = getNextOccurrence(currentDate, pattern);
+    if (!currentDate) break;
+  }
+  
+  return dates;
+};
+
+export const getRecurringTaskStats = (tasks) => {
+  const recurringTasks = tasks.filter(task => task.isRecurring);
+  const activeTemplates = new Set(recurringTasks.map(task => task.recurringId)).size;
+  const completedRecurring = recurringTasks.filter(task => task.completed).length;
+  
+  return {
+    total: recurringTasks.length,
+    activeTemplates,
+    completed: completedRecurring,
+    completionRate: recurringTasks.length > 0 ? Math.round((completedRecurring / recurringTasks.length) * 100) : 0
+  };
+};
+
+export const groupTasksByRecurrence = (tasks) => {
+  const recurring = tasks.filter(task => task.isRecurring);
+  const oneTime = tasks.filter(task => !task.isRecurring);
+  
+  const recurringGroups = recurring.reduce((groups, task) => {
+    const id = task.recurringId;
+    if (!groups[id]) {
+      groups[id] = [];
+    }
+    groups[id].push(task);
+    return groups;
+  }, {});
+  
+  return {
+    oneTime,
+    recurring: recurringGroups
+  };
 };
