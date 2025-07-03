@@ -35,6 +35,27 @@ onBulkMove,
     { value: 'overdue', label: 'Overdue' },
     { value: 'today', label: 'Due Today' }
   ];
+const filterOptions = [
+    { value: 'all', label: 'All Tasks' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'overdue', label: 'Overdue' },
+    { value: 'today', label: 'Due Today' }
+  ];
+
+  const getHighlightedTitle = (task) => {
+    if (!searchTerm) return task.title;
+    
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return task.title.replace(regex, '<mark class="bg-yellow-200 text-yellow-800 px-1 rounded">$1</mark>');
+  };
+
+  const getHighlightedDescription = (task) => {
+    if (!searchTerm || !task.description) return task.description;
+    
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return task.description.replace(regex, '<mark class="bg-yellow-200 text-yellow-800 px-1 rounded">$1</mark>');
+  };
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -51,13 +72,6 @@ onBulkMove,
       case 'completed':
         return matchesSearch && task.completed;
       case 'overdue':
-        return matchesSearch && isOverdue;
-      case 'today':
-        return matchesSearch && isToday && !task.completed;
-      default:
-        return matchesSearch;
-    }
-});
 
   const handleSelectTask = (taskId) => {
     setSelectedTasks(prev => 
@@ -212,12 +226,17 @@ onBulkMove,
               transition={{ delay: index * 0.1 }}
             >
 <TaskCard
-                task={task}
+                task={{
+                  ...task,
+                  title: getHighlightedTitle(task),
+                  description: getHighlightedDescription(task)
+                }}
                 onToggleComplete={onToggleComplete}
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
                 isSelected={selectedTasks.includes(task.Id)}
                 onSelect={handleSelectTask}
+                htmlContent={true}
               />
             </motion.div>
           ))}

@@ -277,9 +277,221 @@ export const groupTasksByRecurrence = (tasks) => {
     groups[id].push(task);
     return groups;
   }, {});
-  
-  return {
+return {
     oneTime,
     recurring: recurringGroups
   };
+};
+
+// Advanced Search and Fuzzy Matching Utilities
+export const calculateLevenshteinDistance = (str1, str2) => {
+  const matrix = [];
+  const len1 = str1.length;
+  const len2 = str2.length;
+
+  if (len1 === 0) return len2;
+  if (len2 === 0) return len1;
+
+  // Initialize matrix
+  for (let i = 0; i <= len1; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= len2; j++) {
+    matrix[0][j] = j;
+  }
+
+  // Fill matrix
+  for (let i = 1; i <= len1; i++) {
+    for (let j = 1; j <= len2; j++) {
+      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,      // deletion
+        matrix[i][j - 1] + 1,      // insertion
+        matrix[i - 1][j - 1] + cost // substitution
+      );
+    }
+  }
+
+  return matrix[len1][len2];
+};
+
+export const fuzzyMatch = (searchTerm, targetText, threshold = 0.6) => {
+  if (!searchTerm || !targetText) return false;
+  
+  const search = searchTerm.toLowerCase().trim();
+  const target = targetText.toLowerCase();
+  
+  // Exact match
+  if (target.includes(search)) return true;
+  
+  // Fuzzy match for single words
+  if (search.length < 3) return false;
+  
+  const words = target.split(/\s+/);
+  
+  for (const word of words) {
+    if (word.length < 3) continue;
+    
+    const distance = calculateLevenshteinDistance(search, word);
+    const maxLength = Math.max(search.length, word.length);
+    const similarity = 1 - (distance / maxLength);
+    
+    if (similarity >= threshold) return true;
+  }
+  
+  return false;
+};
+
+export const highlightSearchTerm = (text, searchTerm) => {
+  if (!searchTerm || !text) return text;
+  
+  const search = searchTerm.toLowerCase().trim();
+  if (!search) return text;
+  
+  // Find exact matches first
+  const regex = new RegExp(`(${search})`, 'gi');
+  if (regex.test(text)) {
+    return text.replace(regex, '<mark class="bg-yellow-200 px-1 rounded">$1</mark>');
+  }
+  
+  // For fuzzy matches, highlight the closest word
+  const words = text.split(/(\s+)/);
+  let bestMatch = '';
+  let bestSimilarity = 0;
+  
+  for (const word of words) {
+    if (word.length < 3 || /^\s+$/.test(word)) continue;
+    
+    const distance = calculateLevenshteinDistance(search, word.toLowerCase());
+    const similarity = 1 - (distance / Math.max(search.length, word.length));
+    
+    if (similarity > bestSimilarity && similarity >= 0.6) {
+      bestMatch = word;
+      bestSimilarity = similarity;
+    }
+  }
+  
+  if (bestMatch) {
+    const highlightRegex = new RegExp(`(${bestMatch})`, 'gi');
+    return text.replace(highlightRegex, '<mark class="bg-yellow-200 px-1 rounded">$1</mark>');
+  }
+  
+  return text;
+};
+
+export const advancedSearchTasks = (tasks, searchTerm, options = {}) => {
+  const {
+    searchFields = ['title', 'description'],
+    fuzzyEnabled = true,
+    fuzzyThreshold = 0.6,
+    caseSensitive = false,
+    projects = []
+  } = options;
+  
+  if (!searchTerm || !searchTerm.trim()) return tasks;
+  
+  const search = caseSensitive ? searchTerm.trim() : searchTerm.toLowerCase().trim();
+  
+  return tasks.filter(task => {
+    // Build searchable text based on selected fields
+    let searchableText = '';
+    
+    if (searchFields.includes('title')) {
+      searchableText += task.title || '';
+    }
+    
+    if (searchFields.includes('description')) {
+      searchableText += ' ' + (task.description || '');
+    }
+    
+    if (searchFields.includes('project')) {
+      const project = projects.find(p => p.Id === task.projectId);
+      if (project) {
+        searchableText += ' ' + project.name;
+      }
+    }
+    
+    const targetText = caseSensitive ? searchableText : searchableText.toLowerCase();
+    
+    // Exact match first
+    if (targetText.includes(search)) return true;
+    
+    // Fuzzy match if enabled
+    if (fuzzyEnabled) {
+      return fuzzyMatch(search, targetText, fuzzyThreshold);
+    }
+    
+    return false;
+  });
+};
+
+export const getSearchSuggestions = (tasks, searchTerm, limit = 5) => {
+  if (!searchTerm || searchTerm.length < 2) return [];
+  
+  const suggestions = new Set();
+  const search = searchTerm.toLowerCase();
+  
+  tasks.forEach(task => {
+    // Add matching words from title
+    if (task.title) {
+      const titleWords = task.title.toLowerCase().split(/\s+/);
+      titleWords.forEach(word => {
+        if (word.length >= 2 && word.includes(search)) {
+          suggestions.add(word);
+        }
+      });
+    }
+    
+    // Add matching words from description
+    if (task.description) {
+      const descWords = task.description.toLowerCase().split(/\s+/);
+      descWords.forEach(word => {
+        if (word.length >= 2 && word.includes(search)) {
+          suggestions.add(word);
+        }
+      });
+    }
+  });
+  
+  return Array.from(suggestions).slice(0, limit);
+};
+
+export const searchTasksWithMetadata = (tasks, searchTerm, filters = {}) => {
+  const {
+    priority = null,
+    completed = null,
+    projectId = null,
+    dateRange = null,
+    searchOptions = {}
+  } = filters;
+  
+  let filteredTasks = tasks;
+  
+  // Apply text search first
+  if (searchTerm && searchTerm.trim()) {
+    filteredTasks = advancedSearchTasks(filteredTasks, searchTerm, searchOptions);
+  }
+  
+  // Apply metadata filters
+  if (priority !== null) {
+    filteredTasks = filteredTasks.filter(task => task.priority === priority);
+  }
+  
+  if (completed !== null) {
+    filteredTasks = filteredTasks.filter(task => task.completed === completed);
+  }
+  
+  if (projectId !== null) {
+    filteredTasks = filteredTasks.filter(task => task.projectId === projectId);
+  }
+  
+  if (dateRange) {
+    filteredTasks = filteredTasks.filter(task => {
+      if (!task.deadline) return false;
+      const taskDate = new Date(task.deadline);
+      return taskDate >= dateRange.start && taskDate <= dateRange.end;
+    });
+  }
+  
+  return filteredTasks;
 };
