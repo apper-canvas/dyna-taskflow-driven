@@ -156,10 +156,9 @@ records: [{
           created_at: new Date().toISOString(),
           is_recurring: taskData.isRecurring ? "true" : "false",
           recurring_id: taskData.recurringId || null,
-          recurrence_pattern: taskData.recurrencePattern || null
+          recurrence_pattern: taskData.recurrencePattern || ''
         }]
       };
-
       const response = await this.apperClient.createRecord('task', params);
       
       if (!response.success) {
@@ -235,13 +234,12 @@ if (updates.projectId !== undefined) updateData.project_id = parseInt(updates.pr
           updateData.completed_at = new Date().toISOString();
         }
       }
-      if (updates.isRecurring !== undefined) updateData.is_recurring = updates.isRecurring ? "true" : "false";
+if (updates.isRecurring !== undefined) updateData.is_recurring = updates.isRecurring ? "true" : "false";
       if (updates.recurringId !== undefined) updateData.recurring_id = updates.recurringId;
-      if (updates.recurrencePattern !== undefined) updateData.recurrence_pattern = updates.recurrencePattern;
+      if (updates.recurrencePattern !== undefined) updateData.recurrence_pattern = updates.recurrencePattern || '';
       const params = {
         records: [updateData]
       };
-
       const response = await this.apperClient.updateRecord('task', params);
       
       if (!response.success) {
