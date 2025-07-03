@@ -28,13 +28,6 @@ onBulkMove,
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [isBulkOperating, setIsBulkOperating] = useState(false);
 
-  const filterOptions = [
-    { value: 'all', label: 'All Tasks' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'overdue', label: 'Overdue' },
-    { value: 'today', label: 'Due Today' }
-  ];
 const filterOptions = [
     { value: 'all', label: 'All Tasks' },
     { value: 'pending', label: 'Pending' },
@@ -72,6 +65,13 @@ const filterOptions = [
       case 'completed':
         return matchesSearch && task.completed;
       case 'overdue':
+        return matchesSearch && isOverdue;
+      case 'today':
+        return matchesSearch && isToday;
+      default:
+        return matchesSearch;
+    }
+  });
 
   const handleSelectTask = (taskId) => {
     setSelectedTasks(prev => 
