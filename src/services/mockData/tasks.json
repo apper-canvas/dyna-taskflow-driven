@@ -1,0 +1,90 @@
+[
+  {
+    "Id": 1,
+    "title": "Complete project proposal",
+    "description": "Write and submit the Q4 project proposal for the new marketing campaign",
+    "priority": "high",
+    "deadline": "2024-12-20T17:00:00.000Z",
+    "projectId": 1,
+    "completed": false,
+    "createdAt": "2024-12-10T09:00:00.000Z",
+    "completedAt": null
+  },
+  {
+    "Id": 2,
+    "title": "Review team performance",
+    "description": "Conduct quarterly performance reviews for all team members",
+    "priority": "medium",
+    "deadline": "2024-12-22T15:00:00.000Z",
+    "projectId": 1,
+    "completed": false,
+    "createdAt": "2024-12-08T10:30:00.000Z",
+    "completedAt": null
+  },
+  {
+    "Id": 3,
+    "title": "Buy groceries",
+    "description": "Weekly grocery shopping - milk, bread, eggs, vegetables",
+    "priority": "low",
+    "deadline": "2024-12-18T19:00:00.000Z",
+    "projectId": 3,
+    "completed": true,
+    "createdAt": "2024-12-15T08:00:00.000Z",
+    "completedAt": "2024-12-17T18:30:00.000Z"
+  },
+  {
+    "Id": 4,
+    "title": "Schedule dentist appointment",
+    "description": "Book routine dental checkup for next month",
+    "priority": "medium",
+    "deadline": "2024-12-25T12:00:00.000Z",
+    "projectId": 2,
+    "completed": false,
+    "createdAt": "2024-12-12T14:00:00.000Z",
+    "completedAt": null
+  },
+  {
+    "Id": 5,
+    "title": "Finish client presentation",
+    "description": "Prepare slides for the Johnson Corp presentation on digital transformation",
+    "priority": "high",
+    "deadline": "2024-12-19T09:00:00.000Z",
+    "projectId": 1,
+    "completed": false,
+    "createdAt": "2024-12-14T16:00:00.000Z",
+    "completedAt": null
+  },
+  {
+    "Id": 6,
+    "title": "Update resume",
+    "description": "Add recent projects and skills to professional resume",
+    "priority": "low",
+    "deadline": "2024-12-30T23:59:00.000Z",
+    "projectId": 2,
+    "completed": false,
+    "createdAt": "2024-12-13T11:00:00.000Z",
+    "completedAt": null
+  },
+  {
+    "Id": 7,
+    "title": "Christmas gift shopping",
+    "description": "Buy presents for family and friends",
+    "priority": "high",
+    "deadline": "2024-12-23T18:00:00.000Z",
+    "projectId": 3,
+    "completed": false,
+    "createdAt": "2024-12-11T13:00:00.000Z",
+    "completedAt": null
+  },
+  {
+    "Id": 8,
+    "title": "Code review",
+    "description": "Review pull requests from team members",
+    "priority": "medium",
+    "deadline": "2024-12-18T17:00:00.000Z",
+    "projectId": 1,
+    "completed": true,
+    "createdAt": "2024-12-16T09:00:00.000Z",
+    "completedAt": "2024-12-17T16:45:00.000Z"
+  }
+]
