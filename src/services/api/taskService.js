@@ -146,15 +146,15 @@ class TaskService {
       
       // Filter fields based on visibility - only include Updateable fields
       const params = {
-        records: [{
+records: [{
           title: taskData.title,
           description: taskData.description || '',
           priority: taskData.priority || 'medium',
           deadline: taskData.deadline,
           project_id: parseInt(taskData.projectId),
-          completed: taskData.completed || false,
+          completed: taskData.completed ? "true" : "false",
           created_at: new Date().toISOString(),
-          is_recurring: taskData.isRecurring || false,
+          is_recurring: taskData.isRecurring ? "true" : "false",
           recurring_id: taskData.recurringId || null,
           recurrence_pattern: taskData.recurrencePattern || null
         }]
@@ -228,17 +228,16 @@ class TaskService {
       if (updates.description !== undefined) updateData.description = updates.description;
       if (updates.priority !== undefined) updateData.priority = updates.priority;
       if (updates.deadline !== undefined) updateData.deadline = updates.deadline;
-      if (updates.projectId !== undefined) updateData.project_id = parseInt(updates.projectId);
+if (updates.projectId !== undefined) updateData.project_id = parseInt(updates.projectId);
       if (updates.completed !== undefined) {
-        updateData.completed = updates.completed;
+        updateData.completed = updates.completed ? "true" : "false";
         if (updates.completed) {
           updateData.completed_at = new Date().toISOString();
         }
       }
-      if (updates.isRecurring !== undefined) updateData.is_recurring = updates.isRecurring;
+      if (updates.isRecurring !== undefined) updateData.is_recurring = updates.isRecurring ? "true" : "false";
       if (updates.recurringId !== undefined) updateData.recurring_id = updates.recurringId;
       if (updates.recurrencePattern !== undefined) updateData.recurrence_pattern = updates.recurrencePattern;
-
       const params = {
         records: [updateData]
       };
@@ -352,9 +351,9 @@ class TaskService {
         throw new Error('Invalid task IDs provided');
       }
 
-      const records = taskIds.map(id => ({
+const records = taskIds.map(id => ({
         Id: parseInt(id),
-        completed: true,
+        completed: "true",
         completed_at: new Date().toISOString()
       }));
 
@@ -536,10 +535,10 @@ class TaskService {
   async createRecurringTasks(taskData) {
     // For now, create a single task - recurring logic can be enhanced later
     return await this.create({
-      ...taskData,
+...taskData,
       isRecurring: true,
       recurringId: Date.now(),
-      recurrencePattern: JSON.stringify(taskData.recurrencePattern)
+      recurrencePattern: taskData.recurrencePattern
     });
   }
 
