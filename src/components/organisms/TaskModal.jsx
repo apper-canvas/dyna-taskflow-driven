@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
 import { toast } from "react-toastify";
+import { subtaskService } from "@/services/api/subtaskService";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 import FormField from "@/components/molecules/FormField";
@@ -23,14 +24,19 @@ const [formData, setFormData] = useState({
     },
     recurrenceEndDate: ''
   });
-  const [projects, setProjects] = useState([]);
+const [projects, setProjects] = useState([]);
+  const [subtasks, setSubtasks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [subtasksLoading, setSubtasksLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [newSubtask, setNewSubtask] = useState({ name: '', description: '', deadline: '' });
+  const [editingSubtask, setEditingSubtask] = useState(null);
 useEffect(() => {
     if (isOpen) {
       setCurrentMode(mode);
       loadProjects();
       if (task) {
+        loadSubtasks();
         setFormData({
           title: task.title || '',
           description: task.description || '',
@@ -55,15 +61,32 @@ useEffect(() => {
         });
       }
       setErrors({});
+      setNewSubtask({ name: '', description: '', deadline: '' });
+      setEditingSubtask(null);
     }
   }, [isOpen, task, mode]);
 
-  const loadProjects = async () => {
+const loadProjects = async () => {
     try {
       const data = await projectService.getAll();
       setProjects(data);
     } catch (error) {
       console.error('Error loading projects:', error);
+    }
+  };
+
+  const loadSubtasks = async () => {
+    if (!task?.Id) return;
+    
+    setSubtasksLoading(true);
+    try {
+      const data = await subtaskService.getByTaskId(task.Id);
+      setSubtasks(data);
+    } catch (error) {
+      console.error('Error loading subtasks:', error);
+      toast.error('Failed to load subtasks');
+    } finally {
+      setSubtasksLoading(false);
     }
   };
 
@@ -177,6 +200,81 @@ label: project.name
         ...prev,
         recurrenceEndDate: value
       }));
+}
+  };
+
+  const handleSubtaskCreate = async () => {
+    if (!newSubtask.name.trim() || !task?.Id) return;
+    
+    try {
+      const subtaskData = {
+        name: newSubtask.name,
+        description: newSubtask.description,
+        taskId: task.Id,
+        deadline: newSubtask.deadline || null,
+        completed: false
+      };
+      
+      const createdSubtask = await subtaskService.create(subtaskData);
+      if (createdSubtask) {
+        setSubtasks(prev => [...prev, createdSubtask]);
+        setNewSubtask({ name: '', description: '', deadline: '' });
+      }
+    } catch (error) {
+      console.error('Error creating subtask:', error);
+      toast.error('Failed to create subtask');
+    }
+  };
+
+  const handleSubtaskToggle = async (subtaskId, completed) => {
+    try {
+      await subtaskService.update(subtaskId, { completed });
+      setSubtasks(prev => prev.map(subtask => 
+        subtask.Id === subtaskId ? { ...subtask, completed } : subtask
+      ));
+    } catch (error) {
+      console.error('Error updating subtask:', error);
+      toast.error('Failed to update subtask');
+    }
+  };
+
+  const handleSubtaskEdit = (subtask) => {
+    setEditingSubtask(subtask);
+  };
+
+  const handleSubtaskUpdate = async () => {
+    if (!editingSubtask || !editingSubtask.name.trim()) return;
+    
+    try {
+      const updatedSubtask = await subtaskService.update(editingSubtask.Id, {
+        name: editingSubtask.name,
+        description: editingSubtask.description,
+        deadline: editingSubtask.deadline
+      });
+      
+      if (updatedSubtask) {
+        setSubtasks(prev => prev.map(subtask => 
+          subtask.Id === editingSubtask.Id ? updatedSubtask : subtask
+        ));
+        setEditingSubtask(null);
+      }
+    } catch (error) {
+      console.error('Error updating subtask:', error);
+      toast.error('Failed to update subtask');
+    }
+  };
+
+  const handleSubtaskDelete = async (subtaskId) => {
+    if (window.confirm('Are you sure you want to delete this subtask?')) {
+      try {
+        const success = await subtaskService.delete(subtaskId);
+        if (success) {
+          setSubtasks(prev => prev.filter(subtask => subtask.Id !== subtaskId));
+        }
+      } catch (error) {
+        console.error('Error deleting subtask:', error);
+        toast.error('Failed to delete subtask');
+      }
     }
   };
   return (
@@ -256,7 +354,7 @@ label: project.name
                             {projects.find(p => p.Id === parseInt(formData.projectId))?.name || "No project assigned"}
                         </p>
                     </div>
-                    {task?.completed && <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+{task?.completed && <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                         <div className="flex items-center">
                             <ApperIcon name="CheckCircle" size={20} className="text-green-600 mr-3" />
                             <div>
@@ -266,6 +364,78 @@ label: project.name
                             </div>
                         </div>
                     </div>}
+                    
+                    {/* Subtasks Section */}
+                    {task && (
+                      <div className="border-t border-gray-200 pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-medium text-gray-900">Subtasks</h4>
+                          <span className="text-sm text-gray-500">
+                            {subtasks.filter(s => s.completed).length} of {subtasks.length} completed
+                          </span>
+                        </div>
+                        
+                        {subtasksLoading ? (
+                          <div className="flex items-center justify-center py-4">
+                            <ApperIcon name="Loader2" size={20} className="animate-spin text-gray-400" />
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {subtasks.map(subtask => (
+                              <div key={subtask.Id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                                <button
+                                  onClick={() => handleSubtaskToggle(subtask.Id, !subtask.completed)}
+                                  className={`flex-shrink-0 w-5 h-5 rounded border-2 transition-colors ${
+                                    subtask.completed 
+                                      ? 'bg-success border-success text-white' 
+                                      : 'border-gray-300 hover:border-success'
+                                  }`}
+                                >
+                                  {subtask.completed && (
+                                    <ApperIcon name="Check" size={12} className="w-full h-full" />
+                                  )}
+                                </button>
+                                <div className="flex-1">
+                                  <p className={`font-medium ${subtask.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                                    {subtask.name}
+                                  </p>
+                                  {subtask.description && (
+                                    <p className="text-sm text-gray-600 mt-1">{subtask.description}</p>
+                                  )}
+                                  {subtask.deadline && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Due: {format(new Date(subtask.deadline), "MMM dd, yyyy")}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleSubtaskEdit(subtask)}
+                                  >
+                                    <ApperIcon name="Edit2" size={14} />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleSubtaskDelete(subtask.Id)}
+                                    className="text-gray-400 hover:text-error"
+                                  >
+                                    <ApperIcon name="Trash2" size={14} />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                            
+                            {subtasks.length === 0 && (
+                              <p className="text-center text-gray-500 py-4">No subtasks yet</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
                     <div className="flex justify-end space-x-3 pt-4">
                         <Button type="button" variant="secondary" onClick={onClose}>Close
                                                 </Button>
@@ -395,7 +565,151 @@ required
                             </>}
                         </Button>
                     </div>
-                </form>}
+</form>}
+                
+                {/* Subtasks Section for Edit Mode */}
+                {currentMode !== 'view' && task && (
+                  <div className="border-t border-gray-200 pt-6 mt-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Subtasks</h4>
+                    
+                    {/* Existing Subtasks */}
+                    {subtasksLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <ApperIcon name="Loader2" size={20} className="animate-spin text-gray-400" />
+                      </div>
+                    ) : (
+                      <div className="space-y-3 mb-4">
+                        {subtasks.map(subtask => (
+                          <div key={subtask.Id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                            <button
+                              onClick={() => handleSubtaskToggle(subtask.Id, !subtask.completed)}
+                              className={`flex-shrink-0 w-5 h-5 rounded border-2 transition-colors ${
+                                subtask.completed 
+                                  ? 'bg-success border-success text-white' 
+                                  : 'border-gray-300 hover:border-success'
+                              }`}
+                            >
+                              {subtask.completed && (
+                                <ApperIcon name="Check" size={12} className="w-full h-full" />
+                              )}
+                            </button>
+                            
+                            {editingSubtask?.Id === subtask.Id ? (
+                              <div className="flex-1 space-y-2">
+                                <input
+                                  type="text"
+                                  value={editingSubtask.name}
+                                  onChange={(e) => setEditingSubtask({...editingSubtask, name: e.target.value})}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                  placeholder="Subtask name"
+                                />
+                                <textarea
+                                  value={editingSubtask.description}
+                                  onChange={(e) => setEditingSubtask({...editingSubtask, description: e.target.value})}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                  placeholder="Description (optional)"
+                                  rows="2"
+                                />
+                                <input
+                                  type="date"
+                                  value={editingSubtask.deadline ? format(new Date(editingSubtask.deadline), 'yyyy-MM-dd') : ''}
+                                  onChange={(e) => setEditingSubtask({...editingSubtask, deadline: e.target.value ? new Date(e.target.value).toISOString() : ''})}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                />
+                                <div className="flex items-center space-x-2">
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={handleSubtaskUpdate}
+                                  >
+                                    <ApperIcon name="Check" size={14} className="mr-1" />
+                                    Save
+                                  </Button>
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => setEditingSubtask(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex-1">
+                                  <p className={`font-medium ${subtask.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                                    {subtask.name}
+                                  </p>
+                                  {subtask.description && (
+                                    <p className="text-sm text-gray-600 mt-1">{subtask.description}</p>
+                                  )}
+                                  {subtask.deadline && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Due: {format(new Date(subtask.deadline), "MMM dd, yyyy")}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleSubtaskEdit(subtask)}
+                                  >
+                                    <ApperIcon name="Edit2" size={14} />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleSubtaskDelete(subtask.Id)}
+                                    className="text-gray-400 hover:text-error"
+                                  >
+                                    <ApperIcon name="Trash2" size={14} />
+                                  </Button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Add New Subtask */}
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <h5 className="font-medium text-gray-900 mb-3">Add New Subtask</h5>
+                      <div className="space-y-3">
+                        <input
+                          type="text"
+                          value={newSubtask.name}
+                          onChange={(e) => setNewSubtask({...newSubtask, name: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          placeholder="Subtask name"
+                        />
+                        <textarea
+                          value={newSubtask.description}
+                          onChange={(e) => setNewSubtask({...newSubtask, description: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          placeholder="Description (optional)"
+                          rows="2"
+                        />
+                        <input
+                          type="date"
+                          value={newSubtask.deadline}
+                          onChange={(e) => setNewSubtask({...newSubtask, deadline: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={handleSubtaskCreate}
+                          disabled={!newSubtask.name.trim()}
+                        >
+                          <ApperIcon name="Plus" size={14} className="mr-1" />
+                          Add Subtask
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
             </div>
         </motion.div>
     </motion.div>}
