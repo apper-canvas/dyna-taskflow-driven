@@ -11,9 +11,9 @@ const Tasks = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
-
+  const [modalMode, setModalMode] = useState('view');
   useEffect(() => {
     loadData();
   }, []);
@@ -43,13 +43,15 @@ const Tasks = () => {
     }
   };
 
-  const handleCreateTask = () => {
+const handleCreateTask = () => {
     setEditingTask(null);
+    setModalMode('create');
     setIsTaskModalOpen(true);
   };
 
-  const handleEditTask = (task) => {
+  const handleTaskClick = (task) => {
     setEditingTask(task);
+    setModalMode('view');
     setIsTaskModalOpen(true);
   };
 
@@ -73,11 +75,12 @@ const Tasks = () => {
     }
   };
 
-  const handleModalClose = () => {
+const handleModalClose = () => {
     setIsTaskModalOpen(false);
     setEditingTask(null);
+    setModalMode('view');
     loadData(); // Refresh data after modal closes
-};
+  };
 
   const handleBulkComplete = async (taskIds) => {
     try {
@@ -131,7 +134,7 @@ const Tasks = () => {
         error={error}
         onRetry={loadData}
         onToggleComplete={handleToggleComplete}
-        onEditTask={handleEditTask}
+        onEditTask={handleTaskClick}
         onDeleteTask={handleDeleteTask}
         onBulkComplete={handleBulkComplete}
         onBulkDelete={handleBulkDelete}
@@ -139,10 +142,11 @@ const Tasks = () => {
         projects={projects}
       />
 
-      <TaskModal
+<TaskModal
         isOpen={isTaskModalOpen}
         onClose={handleModalClose}
         task={editingTask}
+        mode={modalMode}
       />
     </div>
   );

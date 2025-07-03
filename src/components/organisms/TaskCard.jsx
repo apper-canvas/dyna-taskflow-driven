@@ -97,12 +97,14 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete, isSelected = false
             </motion.div>
           )}
         </motion.button>
-
-        {/* Task Content */}
+{/* Task Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h3 className={`font-medium text-gray-900 ${
+            <div 
+              className="flex-1 cursor-pointer"
+              onClick={() => onEdit && onEdit(task)}
+            >
+              <h3 className={`font-medium text-gray-900 transition-colors duration-200 hover:text-primary ${
                 task.completed ? 'line-through text-gray-500' : ''
               }`}>
                 {task.title}
