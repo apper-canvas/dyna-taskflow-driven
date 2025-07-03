@@ -77,6 +77,39 @@ const Tasks = () => {
     setIsTaskModalOpen(false);
     setEditingTask(null);
     loadData(); // Refresh data after modal closes
+};
+
+  const handleBulkComplete = async (taskIds) => {
+    try {
+      await taskService.bulkComplete(taskIds);
+      setTasks(prev => prev.map(task => 
+        taskIds.includes(task.Id) ? { ...task, completed: true, completedAt: new Date().toISOString() } : task
+      ));
+    } catch (err) {
+      throw new Error('Failed to complete tasks');
+    }
+  };
+
+  const handleBulkDelete = async (taskIds) => {
+    try {
+      await taskService.bulkDelete(taskIds);
+      setTasks(prev => prev.filter(task => !taskIds.includes(task.Id)));
+    } catch (err) {
+      throw new Error('Failed to delete tasks');
+    }
+  };
+
+  const handleBulkMove = async (taskIds, projectId) => {
+    try {
+      await taskService.bulkMove(taskIds, projectId);
+      setTasks(prev => prev.map(task => 
+        taskIds.includes(task.Id) 
+          ? { ...task, projectId, project: projects.find(p => p.Id === projectId) }
+          : task
+      ));
+    } catch (err) {
+      throw new Error('Failed to move tasks');
+    }
   };
 
   return (
@@ -92,7 +125,7 @@ const Tasks = () => {
         </Button>
       </div>
 
-      <TaskList
+<TaskList
         tasks={tasks}
         loading={loading}
         error={error}
@@ -100,6 +133,10 @@ const Tasks = () => {
         onToggleComplete={handleToggleComplete}
         onEditTask={handleEditTask}
         onDeleteTask={handleDeleteTask}
+        onBulkComplete={handleBulkComplete}
+        onBulkDelete={handleBulkDelete}
+        onBulkMove={handleBulkMove}
+        projects={projects}
       />
 
       <TaskModal

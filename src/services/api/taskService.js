@@ -68,7 +68,69 @@ class TaskService {
     }
     
     this.tasks.splice(index, 1);
-    return true;
+return true;
+  }
+
+  async bulkComplete(taskIds) {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+      throw new Error('Invalid task IDs provided');
+    }
+    
+    const updatedTasks = [];
+    for (const id of taskIds) {
+      const index = this.tasks.findIndex(t => t.Id === parseInt(id));
+      if (index !== -1) {
+        this.tasks[index] = {
+          ...this.tasks[index],
+          completed: true,
+          completedAt: new Date().toISOString()
+        };
+        updatedTasks.push({ ...this.tasks[index] });
+      }
+    }
+    
+    return updatedTasks;
+  }
+
+  async bulkDelete(taskIds) {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+      throw new Error('Invalid task IDs provided');
+    }
+    
+    const deletedCount = taskIds.length;
+    this.tasks = this.tasks.filter(task => !taskIds.includes(task.Id));
+    
+    return { deletedCount };
+  }
+
+  async bulkMove(taskIds, projectId) {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+      throw new Error('Invalid task IDs provided');
+    }
+    
+    if (!projectId) {
+      throw new Error('Project ID is required');
+    }
+    
+    const updatedTasks = [];
+    for (const id of taskIds) {
+      const index = this.tasks.findIndex(t => t.Id === parseInt(id));
+      if (index !== -1) {
+        this.tasks[index] = {
+          ...this.tasks[index],
+          projectId: parseInt(projectId)
+        };
+        updatedTasks.push({ ...this.tasks[index] });
+      }
+    }
+    
+    return updatedTasks;
   }
 }
 

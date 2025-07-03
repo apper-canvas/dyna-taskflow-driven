@@ -82,3 +82,46 @@ export const groupTasksByProject = (tasks, projects) => {
     tasks: tasks.filter(task => task.projectId === project.Id)
   }));
 };
+
+export const bulkCompleteValidation = (taskIds, tasks) => {
+  if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
+    return { valid: false, message: 'No tasks selected' };
+  }
+  
+  const validTasks = tasks.filter(task => taskIds.includes(task.Id));
+  if (validTasks.length !== taskIds.length) {
+    return { valid: false, message: 'Some selected tasks not found' };
+  }
+  
+  return { valid: true, tasks: validTasks };
+};
+
+export const bulkDeleteValidation = (taskIds, tasks) => {
+  if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
+    return { valid: false, message: 'No tasks selected' };
+  }
+  
+  const validTasks = tasks.filter(task => taskIds.includes(task.Id));
+  if (validTasks.length !== taskIds.length) {
+    return { valid: false, message: 'Some selected tasks not found' };
+  }
+  
+  return { valid: true, tasks: validTasks };
+};
+
+export const bulkMoveValidation = (taskIds, tasks, targetProjectId) => {
+  if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
+    return { valid: false, message: 'No tasks selected' };
+  }
+  
+  if (!targetProjectId) {
+    return { valid: false, message: 'No target project selected' };
+  }
+  
+  const validTasks = tasks.filter(task => taskIds.includes(task.Id));
+  if (validTasks.length !== taskIds.length) {
+    return { valid: false, message: 'Some selected tasks not found' };
+  }
+  
+  return { valid: true, tasks: validTasks };
+};

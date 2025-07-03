@@ -8,7 +8,7 @@ import PriorityBadge from '@/components/molecules/PriorityBadge';
 import ProjectTag from '@/components/molecules/ProjectTag';
 import DeadlineIndicator from '@/components/molecules/DeadlineIndicator';
 
-const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }) => {
+const TaskCard = ({ task, onToggleComplete, onEdit, onDelete, isSelected = false, onSelect }) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -36,16 +36,45 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }) => {
         setIsDeleting(false);
       }
     }
+};
+
+  const handleSelectionChange = () => {
+    if (onSelect) {
+      onSelect(task.Id);
+    }
   };
 
   return (
     <Card 
       className={`relative transition-all duration-200 ${
         task.completed ? 'opacity-75 bg-gray-50' : 'bg-white hover:shadow-md'
-      }`}
+      } ${isSelected ? 'ring-2 ring-primary/50 bg-primary/5' : ''}`}
       padding="md"
     >
       <div className="flex items-start space-x-4">
+        {/* Selection Checkbox */}
+        {onSelect && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleSelectionChange}
+            className={`flex-shrink-0 w-5 h-5 rounded border-2 transition-all duration-200 ${
+              isSelected
+                ? 'bg-primary border-primary text-white'
+                : 'border-gray-300 hover:border-primary'
+            }`}
+          >
+            {isSelected && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="flex items-center justify-center w-full h-full"
+              >
+                <ApperIcon name="Check" size={12} />
+              </motion.div>
+            )}
+          </motion.button>
+        )}
         {/* Checkbox */}
         <motion.button
           whileHover={{ scale: 1.1 }}
