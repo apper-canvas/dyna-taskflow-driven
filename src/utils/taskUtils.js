@@ -122,6 +122,59 @@ export const bulkMoveValidation = (taskIds, tasks, targetProjectId) => {
   if (validTasks.length !== taskIds.length) {
     return { valid: false, message: 'Some selected tasks not found' };
   }
+return { valid: true, tasks: validTasks };
+};
+
+export const getTasksByDate = (tasks, date) => {
+  return tasks.filter(task => {
+    if (!task.deadline) return false;
+    const taskDate = new Date(task.deadline);
+    return taskDate.toDateString() === date.toDateString();
+  });
+};
+
+export const getTasksForMonth = (tasks, year, month) => {
+  return tasks.filter(task => {
+    if (!task.deadline) return false;
+    const taskDate = new Date(task.deadline);
+    return taskDate.getFullYear() === year && taskDate.getMonth() === month;
+  });
+};
+
+export const getCalendarData = (tasks, year, month) => {
+  const today = new Date();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDate = new Date(firstDay);
+  startDate.setDate(startDate.getDate() - firstDay.getDay());
   
-  return { valid: true, tasks: validTasks };
+  const calendar = [];
+  const currentDate = new Date(startDate);
+  
+  for (let week = 0; week < 6; week++) {
+    const weekDays = [];
+    for (let day = 0; day < 7; day++) {
+      const date = new Date(currentDate);
+      const tasksForDate = getTasksByDate(tasks, date);
+      const isToday = date.toDateString() === today.toDateString();
+      const isOverdue = date < today && !isToday;
+      const isCurrentMonth = date.getMonth() === month;
+      
+      weekDays.push({
+        date: new Date(date),
+        day: date.getDate(),
+        tasks: tasksForDate,
+        isToday,
+        isOverdue,
+        isCurrentMonth,
+        hasOverdue: tasksForDate.some(task => !task.completed && isOverdue),
+        hasDueToday: tasksForDate.some(task => !task.completed && isToday)
+      });
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    calendar.push(weekDays);
+  }
+  
+  return calendar;
 };

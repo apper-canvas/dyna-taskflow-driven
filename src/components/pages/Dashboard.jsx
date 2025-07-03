@@ -8,7 +8,7 @@ import Card from '@/components/atoms/Card';
 import ApperIcon from '@/components/ApperIcon';
 import { taskService } from '@/services/api/taskService';
 import { projectService } from '@/services/api/projectService';
-
+import CalendarWidget from '@/components/organisms/CalendarWidget';
 const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -172,7 +172,17 @@ const Dashboard = () => {
               </motion.div>
             );
           })}
-        </div>
+</div>
+      </Card>
+
+      {/* Calendar Widget */}
+      <Card>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Task Calendar</h3>
+        <CalendarWidget 
+          tasks={tasks}
+          projects={projects}
+          loading={loading}
+        />
       </Card>
     </div>
   );
