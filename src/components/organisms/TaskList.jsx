@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { isOverdue } from "@/utils/dateUtils";
+import { highlightSearchTerm, advancedSearchTasks } from "@/utils/taskUtils";
 import ApperIcon from "@/components/ApperIcon";
 import TaskCard from "@/components/organisms/TaskCard";
 import Button from "@/components/atoms/Button";
@@ -36,40 +37,28 @@ const filterOptions = [
     { value: 'today', label: 'Due Today' }
   ];
 
-  const getHighlightedTitle = (task) => {
-    if (!searchTerm) return task.title;
-    
-    const regex = new RegExp(`(${searchTerm})`, 'gi');
-    return task.title.replace(regex, '<mark class="bg-yellow-200 text-yellow-800 px-1 rounded">$1</mark>');
-  };
+// Use advanced search with highlighting
+  const searchedTasks = searchTerm 
+    ? advancedSearchTasks(tasks, searchTerm, { searchFields: ['title', 'description'], projects })
+    : tasks;
 
-  const getHighlightedDescription = (task) => {
-    if (!searchTerm || !task.description) return task.description;
-    
-    const regex = new RegExp(`(${searchTerm})`, 'gi');
-    return task.description.replace(regex, '<mark class="bg-yellow-200 text-yellow-800 px-1 rounded">$1</mark>');
-  };
-
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+  const filteredTasks = searchedTasks.filter(task => {
     const now = new Date();
     const taskDeadline = new Date(task.deadline);
     const isToday = taskDeadline.toDateString() === now.toDateString();
-    const isOverdue = taskDeadline < now && !task.completed;
+    const isTaskOverdue = taskDeadline < now && !task.completed;
 
     switch (activeFilter) {
       case 'pending':
-        return matchesSearch && !task.completed;
+        return !task.completed;
       case 'completed':
-        return matchesSearch && task.completed;
+        return task.completed;
       case 'overdue':
-        return matchesSearch && isOverdue;
+        return isTaskOverdue;
       case 'today':
-        return matchesSearch && isToday;
+        return isToday;
       default:
-        return matchesSearch;
+        return true;
     }
   });
 
@@ -228,15 +217,15 @@ const filterOptions = [
 <TaskCard
                 task={{
                   ...task,
-                  title: getHighlightedTitle(task),
-                  description: getHighlightedDescription(task)
+                  title: searchTerm ? highlightSearchTerm(task.title, searchTerm) : task.title,
+                  description: searchTerm && task.description ? highlightSearchTerm(task.description, searchTerm) : task.description,
+                  htmlContent: !!searchTerm
                 }}
                 onToggleComplete={onToggleComplete}
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
                 isSelected={selectedTasks.includes(task.Id)}
                 onSelect={handleSelectTask}
-                htmlContent={true}
               />
             </motion.div>
           ))}

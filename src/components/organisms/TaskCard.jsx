@@ -100,21 +100,39 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete, isSelected = false
 {/* Task Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
-            <div 
+<div 
               className="flex-1 cursor-pointer"
               onClick={() => onEdit && onEdit(task)}
             >
-              <h3 className={`font-medium text-gray-900 transition-colors duration-200 hover:text-primary ${
-                task.completed ? 'line-through text-gray-500' : ''
-              }`}>
-                {task.title}
-              </h3>
-              {task.description && (
-                <p className={`text-sm mt-1 ${
-                  task.completed ? 'text-gray-400' : 'text-gray-600'
+              {task.htmlContent ? (
+                <h3 
+                  className={`font-medium text-gray-900 transition-colors duration-200 hover:text-primary ${
+                    task.completed ? 'line-through text-gray-500' : ''
+                  }`}
+                  dangerouslySetInnerHTML={{ __html: task.title }}
+                />
+              ) : (
+                <h3 className={`font-medium text-gray-900 transition-colors duration-200 hover:text-primary ${
+                  task.completed ? 'line-through text-gray-500' : ''
                 }`}>
-                  {task.description}
-                </p>
+                  {task.title}
+                </h3>
+              )}
+              {task.description && (
+                task.htmlContent ? (
+                  <p 
+                    className={`text-sm mt-1 ${
+                      task.completed ? 'text-gray-400' : 'text-gray-600'
+                    }`}
+                    dangerouslySetInnerHTML={{ __html: task.description }}
+                  />
+                ) : (
+                  <p className={`text-sm mt-1 ${
+                    task.completed ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    {task.description}
+                  </p>
+                )
               )}
             </div>
             
